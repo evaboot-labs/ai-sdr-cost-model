@@ -1,0 +1,14 @@
+{
+  "name": "evaboot-labs-ai-sdr-cost-model",
+  "owner": { "name": "Evaboot", "url": "https://evaboot.com" },
+  "metadata": {
+    "description": "AI SDR vs human SDR, measured per won deal: your HubSpot numbers, sourced public averages, and the break-even show rate and win rate."
+  },
+  "plugins": [
+    {
+      "name": "ai-sdr-cost-model",
+      "source": "./",
+      "description": "Your AI Agent compares an AI SDR and a human SDR on cost per booked meeting, held meeting, opportunity and won deal, from your HubSpot numbers where you have them and sourced public averages where you do not."
+    }
+  ]
+}

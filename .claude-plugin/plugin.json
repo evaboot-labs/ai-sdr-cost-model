@@ -1,0 +1,13 @@
+{
+  "name": "ai-sdr-cost-model",
+  "version": "1.0.0",
+  "description": "Your AI Agent compares an AI SDR and a human SDR on cost per booked meeting, held meeting, opportunity and won deal, from your HubSpot numbers where you have them and sourced public averages where you do not.",
+  "author": { "name": "Evaboot", "url": "https://evaboot.com" },
+  "homepage": "https://evaboot.com/blog/ai-sdr-vs-human-sdr",
+  "repository": "https://github.com/evaboot-labs/ai-sdr-cost-model",
+  "license": "MIT",
+  "privacyPolicyUrl": "https://evaboot.com/privacy-policy",
+  "keywords": ["ai-sdr", "sales-development", "hubspot", "ai-agent", "evaboot", "n8n"],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json"
+}

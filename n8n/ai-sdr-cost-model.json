@@ -1,0 +1,268 @@
+{
+  "name": "AI SDR vs human SDR cost model (Claude)",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "AI SDR vs human SDR: cost per won deal",
+        "formDescription": "Fill in what you know. Every blank field takes a public average (RevPartners, Salesmotion, Unify).",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Average deal size (USD)",
+              "fieldType": "number",
+              "placeholder": "40000"
+            },
+            {
+              "fieldLabel": "Human SDR cost per year, fully loaded",
+              "fieldType": "number",
+              "placeholder": "112500"
+            },
+            {
+              "fieldLabel": "Meetings booked per human SDR per month",
+              "fieldType": "number",
+              "placeholder": "13.5"
+            },
+            {
+              "fieldLabel": "Human show rate (%)",
+              "fieldType": "number",
+              "placeholder": "75"
+            },
+            {
+              "fieldLabel": "Human held meeting to opportunity (%)",
+              "fieldType": "number",
+              "placeholder": "42"
+            },
+            {
+              "fieldLabel": "Human opportunity win rate (%)",
+              "fieldType": "number",
+              "placeholder": "20"
+            },
+            {
+              "fieldLabel": "AI SDR cost per month",
+              "fieldType": "number",
+              "placeholder": "2750"
+            },
+            {
+              "fieldLabel": "Meetings booked by the AI SDR per month",
+              "fieldType": "number",
+              "placeholder": "20"
+            },
+            {
+              "fieldLabel": "AI show rate (%)",
+              "fieldType": "number",
+              "placeholder": "50"
+            },
+            {
+              "fieldLabel": "AI held meeting to opportunity (%)",
+              "fieldType": "number",
+              "placeholder": "30"
+            },
+            {
+              "fieldLabel": "AI opportunity win rate (%)",
+              "fieldType": "number",
+              "placeholder": "10"
+            },
+            {
+              "fieldLabel": "Hours a month a person reviews the AI",
+              "fieldType": "number",
+              "placeholder": "12"
+            },
+            {
+              "fieldLabel": "Hourly cost of that person",
+              "fieldType": "number",
+              "placeholder": "50"
+            }
+          ]
+        },
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "6d7018a1-ec03-448f-81dd-695fadd32f29",
+      "name": "Your SDR numbers",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "4efba572-e0f7-4568-8ac8-2f93bce6303b"
+    },
+    {
+      "parameters": {
+        "jsCode": "\n// Same as model.py run. A blank field takes the public average and is listed in benchmarks_used.\nconst FIELDS = [[\"Average deal size (USD)\", \"deal_size\", 40000, false], [\"Human SDR cost per year, fully loaded\", \"human_cost_per_year\", 112500, false], [\"Meetings booked per human SDR per month\", \"human_meetings_per_month\", 13.5, false], [\"Human show rate (%)\", \"human_show_rate\", 75, true], [\"Human held meeting to opportunity (%)\", \"human_opp_rate\", 42, true], [\"Human opportunity win rate (%)\", \"human_win_rate\", 20, true], [\"AI SDR cost per month\", \"ai_cost_per_month\", 2750, false], [\"Meetings booked by the AI SDR per month\", \"ai_meetings_per_month\", 20, false], [\"AI show rate (%)\", \"ai_show_rate\", 50, true], [\"AI held meeting to opportunity (%)\", \"ai_opp_rate\", 30, true], [\"AI opportunity win rate (%)\", \"ai_win_rate\", 10, true], [\"Hours a month a person reviews the AI\", \"ai_review_hours_per_month\", 12, false], [\"Hourly cost of that person\", \"review_hourly_cost\", 50, false]];\nconst f = $('Your SDR numbers').first().json;\nconst v = {}, bench = [];\nfor (const [label, key, avg, pct] of FIELDS) {\n  const raw = f[label];\n  // n8n sends 0 for a blank number field, and none of these numbers can really be 0.\n  const given = raw !== undefined && raw !== null && String(raw).trim() !== '' && Number(raw) !== 0;\n  const n = given ? Number(raw) : avg;\n  v[key] = pct ? n / 100 : n;\n  if (!given) bench.push(key);\n}\nconst side = (p, cost) => {\n  const booked = v[p + '_meetings_per_month'], held = booked * v[p + '_show_rate'];\n  const opps = held * v[p + '_opp_rate'], won = opps * v[p + '_win_rate'];\n  const per = n => n ? Math.round(cost / n) : null;\n  return { cost_per_month: Math.round(cost), booked, held: +held.toFixed(1), opportunities: +opps.toFixed(2), won: +won.toFixed(2),\n    cost_per_booked: per(booked), cost_per_held: per(held), cost_per_opportunity: per(opps), cost_per_won_deal: per(won),\n    won_revenue: Math.round(won * v.deal_size) };\n};\nconst human = side('human', v.human_cost_per_year / 12);\nconst aiCost = v.ai_cost_per_month + v.ai_review_hours_per_month * v.review_hourly_cost;\nconst ai = side('ai', aiCost);\nconst t = human.cost_per_won_deal;\nreturn [{ json: { currency: 'USD', deal_size: v.deal_size, human, ai,\n  per_booked: ai.cost_per_booked < human.cost_per_booked ? 'ai cheaper' : 'human cheaper',\n  per_won_deal: ai.cost_per_won_deal < human.cost_per_won_deal ? 'ai cheaper' : 'human cheaper',\n  breakeven_ai_show_rate: +(aiCost / (v.ai_meetings_per_month * v.ai_opp_rate * v.ai_win_rate * t)).toFixed(2),\n  breakeven_ai_win_rate: +(aiCost / (v.ai_meetings_per_month * v.ai_show_rate * v.ai_opp_rate * t)).toFixed(3),\n  benchmarks_used: bench } }];\n"
+      },
+      "id": "10b5dd0f-1f56-48df-9835-698446aa8ca0",
+      "name": "Run the model",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "hasOutputParser": true,
+        "text": "={{ JSON.stringify($json) }}",
+        "options": {
+          "systemMessage": "You advise a sales leader on AI SDR vs human SDR. Use only the numbers in the JSON. Never invent a number or a reason.\n\nReturn {decision}: under 150 words, plain text.\n- First, the cost per booked meeting of each side, then the cost per won deal of each side, with USD. If the cheaper side changes between the two, say so.\n- Then the break-even: the AI show rate and the AI win rate at which both sides cost the same per won deal.\n- If benchmarks_used is not empty, say that those inputs are public averages and should be replaced by the team's own numbers before any hiring decision.\n- Never guess anyone's gender.",
+          "maxIterations": 3
+        }
+      },
+      "id": "0ece5710-29b0-46dc-b717-cece3a5d8418",
+      "name": "Write the decision",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-sonnet-5-5",
+          "cachedResultName": "claude-sonnet-5-5"
+        },
+        "options": {
+          "maxTokensToSample": 2000
+        }
+      },
+      "id": "73cf5583-bd2e-40ca-831b-3d4a062f05e5",
+      "name": "Claude",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        400,
+        220
+      ],
+      "credentials": {
+        "anthropicApi": {
+          "id": "",
+          "name": "Anthropic"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"required\": [\n    \"decision\"\n  ],\n  \"properties\": {\n    \"decision\": {\n      \"type\": \"string\"\n    }\n  }\n}"
+      },
+      "id": "e019bf83-f3c5-454a-9fde-b61eba00604a",
+      "name": "Decision",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        560,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\n// Same as model.py check: the real numbers, the benchmarks named, and the per-deal flip said out loud.\nconst m = $('Run the model').first().json;\nconst text = String($json.output.decision || '');\nconst flat = text.replace(/,/g, '');\nconst problems = [];\nfor (const s of ['human', 'ai']) for (const k of ['cost_per_booked', 'cost_per_won_deal'])\n  if (m[s][k] && !flat.includes(String(m[s][k]))) problems.push(`${s} ${k.replace(/_/g, ' ')} missing`);\nif (m.benchmarks_used.length && !/benchmark|public average/i.test(text)) problems.push('must say which inputs are public averages');\nif (m.per_booked !== m.per_won_deal && !/per (won )?deal/i.test(text)) problems.push('must say the winner changes per won deal');\nif (/\\b(he|she|him|her|his|hers)\\b/i.test(text)) problems.push('guesses a gender');\nconst row = (label, h, a) => `${label}: human USD ${h}, AI USD ${a}`;\nreturn [{ json: { decision: text, check: problems.length ? 'FAIL: ' + problems.join('; ') : 'OK',\n  table: [row('Cost per booked meeting', m.human.cost_per_booked, m.ai.cost_per_booked),\n          row('Cost per held meeting', m.human.cost_per_held, m.ai.cost_per_held),\n          row('Cost per opportunity', m.human.cost_per_opportunity, m.ai.cost_per_opportunity),\n          row('Cost per won deal', m.human.cost_per_won_deal, m.ai.cost_per_won_deal)].join('\\n') } }];\n"
+      },
+      "id": "bec5ffd2-1ff5-473d-8483-062bb1224237",
+      "name": "Check the decision",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "Your AI SDR vs human SDR numbers",
+        "completionMessage": "={{ $json.table }}\n\n{{ $json.decision }}\n\nCheck: {{ $json.check }}",
+        "options": {}
+      },
+      "id": "c8251721-1f78-40c9-9af2-2e0fb33b431d",
+      "name": "Show the result",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.3,
+      "position": [
+        940,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Your SDR numbers": {
+      "main": [
+        [
+          {
+            "node": "Run the model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run the model": {
+      "main": [
+        [
+          {
+            "node": "Write the decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write the decision": {
+      "main": [
+        [
+          {
+            "node": "Check the decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the decision": {
+      "main": [
+        [
+          {
+            "node": "Show the result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Write the decision",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decision": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Write the decision",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
