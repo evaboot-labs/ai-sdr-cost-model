@@ -1,0 +1,7 @@
+{"layout": "flow", "eyebrow": "evaboot-labs · ai-sdr-cost-model", "headline": "Cheap per meeting?",
+ "subline": "AI SDR vs human SDR, measured per won deal, not per booked meeting.",
+ "nodes": [{"label": "01 · Actuals", "title": "HubSpot", "caption": "Show rate, win rate, deal size"},
+           {"label": "02 · Gaps", "title": "MODEL.md", "caption": "Public averages, sourced"},
+           {"label": "03 · Model", "title": "model.py", "caption": "Booked, held, opportunity, won"},
+           {"label": "04 · Decision", "title": "AI Agent", "caption": "Break-even, benchmarks named"}],
+ "spec": "cost per won deal · break-even show rate and win rate"}
